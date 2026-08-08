@@ -6,6 +6,7 @@ import lombok.Getter;
 public enum ErrorCode {
 
     MEMBER_NOT_FOUND("회원을 찾을 수 없습니다."),
+    ADDRESS_NOT_FOUND("존재하지 않는 배송지입니다."),
     GRADE_NOT_FOUND("등급 정보를 찾을 수 없습니다."),
 
     DUPLICATE_LOGIN_ID("이미 존재하는 아이디입니다."),

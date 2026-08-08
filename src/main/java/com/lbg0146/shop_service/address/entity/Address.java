@@ -40,5 +40,49 @@ public class Address extends BaseEntity {
     private String detailAddress;
 
     @Column(nullable = false)
-    private Boolean isDefault;
+    private boolean isDefault;
+
+    public static Address createAddress(
+            Member member,
+            String addressName,
+            String receiverName,
+            String phone,
+            String zipcode,
+            String address,
+            String detailAddress,
+            boolean isDefault
+    ) {
+        Address addressEntity = new Address();
+
+        addressEntity.member = member;
+        addressEntity.addressName = addressName;
+        addressEntity.receiverName = receiverName;
+        addressEntity.phone = phone;
+        addressEntity.zipcode = zipcode;
+        addressEntity.address = address;
+        addressEntity.detailAddress = detailAddress;
+        addressEntity.isDefault = isDefault;
+
+        return addressEntity;
+    }
+
+    public void update(
+            String addressName,
+            String receiverName,
+            String phone,
+            String zipcode,
+            String address,
+            String detailAddress
+    ) {
+        this.addressName = addressName;
+        this.receiverName = receiverName;
+        this.phone = phone;
+        this.zipcode = zipcode;
+        this.address = address;
+        this.detailAddress = detailAddress;
+    }
+
+    public void updateDefault(boolean isDefault) {
+        this.isDefault = isDefault;
+    }
 }

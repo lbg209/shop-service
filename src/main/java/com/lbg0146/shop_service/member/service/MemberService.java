@@ -64,7 +64,6 @@ public class MemberService {
         }
     }
 
-    @Transactional(readOnly = true)
     public MemberResponse findMember(Long memberId) {
 
         Member member = memberRepository.findByIdAndDeletedAtIsNull(memberId)
@@ -89,8 +88,7 @@ public class MemberService {
 
         member.delete();
     }
-
-    @Transactional(readOnly = true)
+    
     public List<MemberResponse> findMembers() {
 
         return memberRepository.findAllByDeletedAtIsNull()
