@@ -40,4 +40,45 @@ public class Product extends BaseEntity {
 
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
+
+    public static Product createProduct(
+            Category category,
+            String productName,
+            Long price,
+            Integer stockQuantity,
+            String description
+    ) {
+        Product product = new Product();
+
+        product.category = category;
+        product.productName = productName;
+        product.price = price;
+        product.stockQuantity = stockQuantity;
+        product.description = description;
+        product.status = ProductStatus.SALE;
+
+        return product;
+    }
+
+    public void update(
+            Category category,
+            String productName,
+            Long price,
+            Integer stockQuantity,
+            String description
+    ) {
+        this.category = category;
+        this.productName = productName;
+        this.price = price;
+        this.stockQuantity = stockQuantity;
+        this.description = description;
+    }
+
+    public void delete() {
+        this.deletedAt = LocalDateTime.now();
+    }
+
+    public void changeStatus(ProductStatus status) {
+        this.status = status;
+    }
 }
