@@ -1,5 +1,8 @@
 package com.lbg0146.shop_service.exception;
 
+import lombok.Getter;
+
+@Getter
 public class BusinessException extends RuntimeException {
 
     private final ErrorCode errorCode;

@@ -35,4 +35,23 @@ public class CartItem extends BaseEntity {
 
     @Column(nullable = false)
     private Integer quantity;
+
+    public static CartItem createCartItem(
+            Cart cart,
+            Product product,
+            Integer quantity
+    ) {
+
+        CartItem cartItem = new CartItem();
+
+        cartItem.cart = cart;
+        cartItem.product = product;
+        cartItem.quantity = quantity;
+
+        return cartItem;
+    }
+
+    public void changeQuantity(Integer quantity) {
+        this.quantity = quantity;
+    }
 }

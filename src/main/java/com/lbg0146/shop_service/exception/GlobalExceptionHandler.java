@@ -6,10 +6,13 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
     @ExceptionHandler(BusinessException.class)
-    public ResponseEntity<String> handleBusinessException(BusinessException e) {
+    public ResponseEntity<String> handleBusinessException(
+            BusinessException e
+    ) {
         return ResponseEntity
-                .badRequest()
+                .status(e.getErrorCode().getStatus())
                 .body(e.getMessage());
     }
 }

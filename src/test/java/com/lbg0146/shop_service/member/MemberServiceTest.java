@@ -29,24 +29,26 @@ public class MemberServiceTest {
     @Autowired
     GradeRepository gradeRepository;
 
+    private static int count = 0;
+
     @Test
     void 회원가입_성공() {
 
         MemberCreateRequest request = new MemberCreateRequest(
-                "testUser",
+                "testUser1",
                 "1234",
-                "테스트",
-                "테스터",
-                "test@test.com",
-                "01011111111"
+                "테스트1",
+                "테스터1",
+                "test1@test.com",
+                "01011123411"
         );
 
         Long memberId = memberService.join(request);
 
         MemberResponse member = memberService.findMember(memberId);
 
-        assertThat(member.loginId()).isEqualTo("testUser");
-        assertThat(member.nickname()).isEqualTo("테스터");
+        assertThat(member.loginId()).isEqualTo("testUser1");
+        assertThat(member.nickname()).isEqualTo("테스터1");
         assertThat(member.gradeName()).isEqualTo("일반회원");
     }
 
@@ -55,23 +57,23 @@ public class MemberServiceTest {
 
         // given
         MemberCreateRequest request = new MemberCreateRequest(
-                "testUser",
+                "testUser3",
                 "1234",
-                "테스트",
-                "테스터",
-                "test1@test.com",
-                "01011111111"
+                "테스트3",
+                "테스터3",
+                "test3@test.com",
+                "01013331111"
         );
 
         memberService.join(request);
 
         MemberCreateRequest duplicateRequest = new MemberCreateRequest(
-                "testUser",
+                "testUser3",
                 "5678",
-                "테스트2",
-                "테스터2",
-                "test2@test.com",
-                "01022222222"
+                "테스트3",
+                "테스터3",
+                "test3@test.com",
+                "01022562222"
         );
 
         // when & then
@@ -85,12 +87,12 @@ public class MemberServiceTest {
 
         // given
         MemberCreateRequest request = new MemberCreateRequest(
-                "testUser",
+                "testUser4",
                 "1234",
-                "탈퇴",
-                "탈퇴자",
+                "탈퇴4",
+                "탈퇴자4",
                 "delete@test.com",
-                "01033333333"
+                "01033421333"
         );
 
         Long memberId = memberService.join(request);
@@ -109,12 +111,12 @@ public class MemberServiceTest {
 
         // given
         MemberCreateRequest request = new MemberCreateRequest(
-                "testUser",
+                "testUser5",
                 "1234",
-                "수정테스트",
-                "닉네임",
+                "수정테스트5",
+                "닉네임5",
                 "update@test.com",
-                "01044444444"
+                "01044514214"
         );
 
         Long memberId = memberService.join(request);
