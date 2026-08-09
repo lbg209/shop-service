@@ -56,4 +56,31 @@ public class Order extends BaseEntity {
 
     @Column(nullable = false)
     private LocalDateTime orderedAt;
+
+    public static Order createOrder(
+            String orderNumber,
+            Member member,
+            CommonCodeDetail orderStatus,
+            String receiverName,
+            String receiverPhone,
+            String zipCode,
+            String address,
+            String detailAddress,
+            Long totalPrice
+    ) {
+        Order order = new Order();
+
+        order.orderNumber = orderNumber;
+        order.member = member;
+        order.orderStatus = orderStatus;
+        order.receiverName = receiverName;
+        order.receiverPhone = receiverPhone;
+        order.zipCode = zipCode;
+        order.address = address;
+        order.detailAddress = detailAddress;
+        order.totalPrice = totalPrice;
+        order.orderedAt = LocalDateTime.now();
+
+        return order;
+    }
 }

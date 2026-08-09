@@ -20,6 +20,8 @@ public enum ErrorCode {
 
     CART_ITEM_NOT_FOUND(HttpStatus.NOT_FOUND, "장바구니를 찾을 수 없습니다."),
 
+    CART_EMPTY(HttpStatus.BAD_REQUEST, "장바구니가 비어있습니다."),
+
     INVALID_QUANTITY(HttpStatus.BAD_REQUEST,"상품 수량은 1개 이상이어야 합니다."),
 
     PRODUCT_NOT_FOUND(HttpStatus.NOT_FOUND, "상품을 찾을 수 없습니다."),
@@ -28,7 +30,13 @@ public enum ErrorCode {
 
     DUPLICATE_EMAIL(HttpStatus.CONFLICT, "이미 존재하는 이메일입니다."),
 
-    DUPLICATE_PHONE(HttpStatus.CONFLICT, "이미 존재하는 전화번호입니다.");
+    DUPLICATE_PHONE(HttpStatus.CONFLICT, "이미 존재하는 전화번호입니다."),
+
+    ORDER_ITEM_EMPTY(HttpStatus.BAD_REQUEST, "주문 상품이 없습니다."),
+
+    ORDER_STATUS_NOT_FOUND(HttpStatus.NOT_FOUND, "주문 상태를 찾을 수 없습니다."),
+
+    INSUFFICIENT_STOCK(HttpStatus.BAD_REQUEST, "재고가 부족합니다.");
 
     private final HttpStatus status;
     private final String message;

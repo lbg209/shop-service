@@ -1,6 +1,8 @@
 package com.lbg0146.shop_service.product.entity;
 
 import com.lbg0146.shop_service.common.entity.BaseEntity;
+import com.lbg0146.shop_service.exception.BusinessException;
+import com.lbg0146.shop_service.exception.ErrorCode;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -80,5 +82,18 @@ public class Product extends BaseEntity {
 
     public void changeStatus(ProductStatus status) {
         this.status = status;
+    }
+    // 동시성 문제 발생 !!!!!
+    public void decreaseStock(Integer quantity) {
+
+        if (stockQuantity < quantity) {
+            throw new BusinessException(ErrorCode.INSUFFICIENT_STOCK);
+        }
+
+        stockQuantity -= quantity;
+
+        if (stockQuantity == 0) {
+            status = ProductStatus.SOLD_OUT;
+        }
     }
 }
