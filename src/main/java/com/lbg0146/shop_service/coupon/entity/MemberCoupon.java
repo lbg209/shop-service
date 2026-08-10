@@ -1,6 +1,8 @@
 package com.lbg0146.shop_service.coupon.entity;
 
 import com.lbg0146.shop_service.common.entity.BaseEntity;
+import com.lbg0146.shop_service.exception.BusinessException;
+import com.lbg0146.shop_service.exception.ErrorCode;
 import com.lbg0146.shop_service.member.entity.Member;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
@@ -37,4 +39,41 @@ public class MemberCoupon extends BaseEntity {
     private LocalDateTime usedAt;
 
     private LocalDateTime expiredAt;
+
+    public static MemberCoupon createMemberCoupon(
+            Member member,
+            Coupon coupon
+    ) {
+        MemberCoupon memberCoupon = new MemberCoupon();
+
+        LocalDateTime now = LocalDateTime.now();
+
+        memberCoupon.member = member;
+        memberCoupon.coupon = coupon;
+        memberCoupon.status = CouponStatus.ISSUED;
+        memberCoupon.issuedAt = now;
+        memberCoupon.expiredAt = now.plusDays(coupon.getValidDays());
+
+        return memberCoupon;
+    }
+
+    public void use() {
+
+        if (status != CouponStatus.ISSUED) {
+            throw new BusinessException(ErrorCode.COUPON_NOT_USABLE);
+        }
+
+        if (expiredAt.isBefore(LocalDateTime.now())) {
+            status = CouponStatus.EXPIRED;
+            throw new BusinessException(ErrorCode.COUPON_EXPIRED);
+        }
+
+        status = CouponStatus.USED;
+        usedAt = LocalDateTime.now();
+    }
+
+    // 테스트 메서드
+    public void expire() {
+        this.expiredAt = LocalDateTime.now().minusDays(1);
+    }
 }

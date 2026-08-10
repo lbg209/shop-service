@@ -47,4 +47,28 @@ public class Coupon extends BaseEntity {
     // 쿠폰 정책 삭제 여부 (Soft Delete)
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
+
+    public static Coupon createCoupon(
+            CommonCodeDetail discountType,
+            String couponName,
+            Integer discountValue,
+            Long minOrderAmount,
+            Long maxDiscountAmount,
+            Integer validDays
+    ) {
+        Coupon coupon = new Coupon();
+
+        coupon.discountType = discountType;
+        coupon.couponName = couponName;
+        coupon.discountValue = discountValue;
+        coupon.minOrderAmount = minOrderAmount;
+        coupon.maxDiscountAmount = maxDiscountAmount;
+        coupon.validDays = validDays;
+
+        return coupon;
+    }
+
+    public void delete() {
+        this.deletedAt = LocalDateTime.now();
+    }
 }
