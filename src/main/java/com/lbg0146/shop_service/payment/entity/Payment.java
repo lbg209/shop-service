@@ -45,4 +45,24 @@ public class Payment extends BaseEntity {
 
     @Column(length = 255)
     private String failReason;
+
+    public static Payment createPayment(
+            Order order,
+            CommonCodeDetail paymentStatus,
+            CommonCodeDetail paymentMethod,
+            Long paidAmount,
+            String paymentKey,
+            LocalDateTime paidAt
+    ) {
+        Payment payment = new Payment();
+
+        payment.order = order;
+        payment.paymentStatus = paymentStatus;
+        payment.paymentMethod = paymentMethod;
+        payment.paidAmount = paidAmount;
+        payment.paymentKey = paymentKey;
+        payment.paidAt = paidAt;
+
+        return payment;
+    }
 }

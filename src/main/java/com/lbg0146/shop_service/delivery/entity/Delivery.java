@@ -34,4 +34,26 @@ public class Delivery extends BaseEntity {
     private LocalDateTime shippedAt;
 
     private LocalDateTime deliveredAt;
+
+    public static Delivery createDelivery(
+            Order order,
+            CommonCodeDetail deliveryStatus
+    ) {
+        Delivery delivery = new Delivery();
+        delivery.order = order;
+        delivery.deliveryStatus = deliveryStatus;
+        return delivery;
+    }
+
+    public void changeStatus(CommonCodeDetail deliveryStatus) {
+        this.deliveryStatus = deliveryStatus;
+    }
+
+    public void startShipping() {
+        this.shippedAt = LocalDateTime.now();
+    }
+
+    public void completeDelivery() {
+        this.deliveredAt = LocalDateTime.now();
+    }
 }
