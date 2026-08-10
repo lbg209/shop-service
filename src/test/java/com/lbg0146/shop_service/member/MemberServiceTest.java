@@ -10,6 +10,7 @@ import com.lbg0146.shop_service.member.service.MemberService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
@@ -18,18 +19,11 @@ import static org.assertj.core.api.Assertions.*;
 
 @SpringBootTest
 @Transactional
+@ActiveProfiles("test")
 public class MemberServiceTest {
 
     @Autowired
     MemberService memberService;
-
-    @Autowired
-    MemberRepository memberRepository;
-
-    @Autowired
-    GradeRepository gradeRepository;
-
-    private static int count = 0;
 
     @Test
     void 회원가입_성공() {
@@ -55,7 +49,6 @@ public class MemberServiceTest {
     @Test
     void 중복_로그인아이디_회원가입_실패() {
 
-        // given
         MemberCreateRequest request = new MemberCreateRequest(
                 "testUser3",
                 "1234",
@@ -76,7 +69,6 @@ public class MemberServiceTest {
                 "01022562222"
         );
 
-        // when & then
         assertThatThrownBy(() -> memberService.join(duplicateRequest))
                 .isInstanceOf(BusinessException.class)
                 .hasMessage("이미 존재하는 아이디입니다.");
@@ -85,7 +77,6 @@ public class MemberServiceTest {
     @Test
     void 탈퇴한_회원은_조회_불가능() {
 
-        // given
         MemberCreateRequest request = new MemberCreateRequest(
                 "testUser4",
                 "1234",
@@ -97,10 +88,8 @@ public class MemberServiceTest {
 
         Long memberId = memberService.join(request);
 
-        // when
         memberService.deleteMember(memberId);
 
-        // then
         assertThatThrownBy(() -> memberService.findMember(memberId))
                 .isInstanceOf(BusinessException.class)
                 .hasMessage("회원을 찾을 수 없습니다.");
@@ -109,7 +98,6 @@ public class MemberServiceTest {
     @Test
     void 회원정보_수정_성공() {
 
-        // given
         MemberCreateRequest request = new MemberCreateRequest(
                 "testUser5",
                 "1234",
@@ -126,10 +114,8 @@ public class MemberServiceTest {
                 "01099999999"
         );
 
-        // when
         memberService.updateMember(memberId, updateRequest);
 
-        // then
         MemberResponse response = memberService.findMember(memberId);
 
         assertThat(response.nickname()).isEqualTo("변경닉네임");
@@ -140,7 +126,6 @@ public class MemberServiceTest {
     @Test
     void 회원목록_조회_탈퇴회원_제외() {
 
-        // given
         Long member1 = memberService.join(
                 new MemberCreateRequest(
                         "userA",

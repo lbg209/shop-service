@@ -4,16 +4,14 @@ import com.lbg0146.shop_service.address.dto.request.AddressCreateRequest;
 import com.lbg0146.shop_service.address.dto.request.AddressUpdateRequest;
 import com.lbg0146.shop_service.address.entity.Address;
 import com.lbg0146.shop_service.address.repository.AddressRepository;
-import com.lbg0146.shop_service.common.enums.Role;
-import com.lbg0146.shop_service.grade.entity.Grade;
-import com.lbg0146.shop_service.grade.repository.GradeRepository;
 import com.lbg0146.shop_service.member.entity.Member;
-import com.lbg0146.shop_service.member.repository.MemberRepository;
+import com.lbg0146.shop_service.support.TestDataFactory;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 import tools.jackson.databind.ObjectMapper;
@@ -29,7 +27,11 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 @SpringBootTest
 @AutoConfigureMockMvc
 @Transactional
+@ActiveProfiles("test")
 public class AddressControllerTest {
+
+    @Autowired
+    private TestDataFactory testDataFactory;
 
     @Autowired
     MockMvc mockMvc;
@@ -38,37 +40,12 @@ public class AddressControllerTest {
     ObjectMapper objectMapper;
 
     @Autowired
-    MemberRepository memberRepository;
-
-    @Autowired
-    GradeRepository gradeRepository;
-
-    @Autowired
     AddressRepository addressRepository;
-
-    private Member createMember() {
-
-        Grade grade = gradeRepository.findByGradeCode("BASIC")
-                .orElseThrow();
-
-        Member member = Member.createMember(
-                grade,
-                "controllerUser",
-                "1234",
-                "컨트롤러테스트",
-                "닉네임",
-                "controller@test.com",
-                "01011111111",
-                Role.USER
-        );
-
-        return memberRepository.save(member);
-    }
 
     @Test
     void 배송지_등록_API_성공() throws Exception {
 
-        Member member = createMember();
+        Member member = testDataFactory.createMember();
 
         AddressCreateRequest request = new AddressCreateRequest(
                 "집",
@@ -91,7 +68,7 @@ public class AddressControllerTest {
     @Test
     void 배송지_조회_API_성공() throws Exception {
 
-        Member member = createMember();
+        Member member = testDataFactory.createMember();
 
         Address address = addressRepository.save(
                 Address.createAddress(
@@ -117,7 +94,7 @@ public class AddressControllerTest {
                     .andExpect(jsonPath("$.addressName")
                             .value("집"))
                     .andExpect(jsonPath("$.receiverName")
-                            .value("홍길동"))
+                            .value("테스트"))
                     .andExpect(jsonPath("$.isDefault")
                             .value(true));
         }
@@ -125,7 +102,7 @@ public class AddressControllerTest {
     @Test
     void 배송지_목록_조회_API_성공() throws Exception {
 
-        Member member = createMember();
+        Member member = testDataFactory.createMember();
 
         addressRepository.save(
                 Address.createAddress(
@@ -169,7 +146,7 @@ public class AddressControllerTest {
     @Test
     void 배송지_수정_API_성공() throws Exception {
 
-        Member member = createMember();
+        Member member = testDataFactory.createMember();
 
         Address address = addressRepository.save(
                 Address.createAddress(
@@ -212,7 +189,7 @@ public class AddressControllerTest {
     @Test
     void 대표배송지_변경_API_성공() throws Exception {
 
-        Member member = createMember();
+        Member member = testDataFactory.createMember();
 
         Address home = addressRepository.save(
                 Address.createAddress(

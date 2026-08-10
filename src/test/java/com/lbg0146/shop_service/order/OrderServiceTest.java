@@ -2,7 +2,6 @@ package com.lbg0146.shop_service.order;
 
 import com.lbg0146.shop_service.exception.BusinessException;
 import com.lbg0146.shop_service.member.entity.Member;
-import com.lbg0146.shop_service.member.repository.MemberRepository;
 import com.lbg0146.shop_service.order.dto.request.OrderCreateRequest;
 import com.lbg0146.shop_service.order.dto.request.OrderItemRequest;
 import com.lbg0146.shop_service.order.entity.Order;
@@ -11,10 +10,11 @@ import com.lbg0146.shop_service.order.repository.OrderItemRepository;
 import com.lbg0146.shop_service.order.repository.OrderRepository;
 import com.lbg0146.shop_service.order.service.OrderService;
 import com.lbg0146.shop_service.product.entity.Product;
-import com.lbg0146.shop_service.product.repository.ProductRepository;
+import com.lbg0146.shop_service.support.TestDataFactory;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
@@ -24,16 +24,14 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @SpringBootTest
 @Transactional
+@ActiveProfiles("test")
 public class OrderServiceTest {
 
     @Autowired
+    private TestDataFactory testDataFactory;
+
+    @Autowired
     private OrderService orderService;
-
-    @Autowired
-    private MemberRepository memberRepository;
-
-    @Autowired
-    private ProductRepository productRepository;
 
     @Autowired
     private OrderRepository orderRepository;
@@ -44,15 +42,15 @@ public class OrderServiceTest {
     @Test
     void 단건_주문이_정상적으로_생성() {
 
-        // given
-        Member member = memberRepository.findByIdAndDeletedAtIsNull(2L).orElseThrow();
-
-        Product product = productRepository.findByIdAndDeletedAtIsNull(1L).orElseThrow();
+        Member member = testDataFactory.createMember();
+        Product product = testDataFactory.createProduct();
 
         int beforeStock = product.getStockQuantity();
 
         OrderCreateRequest request = new OrderCreateRequest(
-                List.of(new OrderItemRequest(product.getId(), 2)),
+                List.of(
+                        new OrderItemRequest(product.getId(), 2)
+                ),
                 "테스터",
                 "01012345678",
                 "12345",
@@ -60,7 +58,10 @@ public class OrderServiceTest {
                 "101호"
         );
 
-        Long orderId = orderService.createOrder(member.getId(), request);
+        Long orderId = orderService.createOrder(
+                member.getId(),
+                request
+        );
 
         Order order = orderRepository.findById(orderId).orElseThrow();
 
@@ -82,9 +83,8 @@ public class OrderServiceTest {
     @Test
     void 재고보다_많이_주문하면_실패() {
 
-        Member member = memberRepository.findByIdAndDeletedAtIsNull(2L).orElseThrow();
-
-        Product product = productRepository.findByIdAndDeletedAtIsNull(1L).orElseThrow();
+        Member member = testDataFactory.createMember();
+        Product product = testDataFactory.createProduct();
 
         int stock = product.getStockQuantity();
 

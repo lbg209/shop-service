@@ -6,9 +6,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 import tools.jackson.databind.ObjectMapper;
+
+import java.util.UUID;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -16,6 +19,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest
 @AutoConfigureMockMvc
 @Transactional
+@ActiveProfiles("test")
 public class MemberControllerTest {
 
     @Autowired
@@ -27,13 +31,18 @@ public class MemberControllerTest {
     @Test
     void 회원가입_API_성공() throws Exception {
 
+        String uniqueId = UUID.randomUUID().toString();
+        String loginId = "controller_" + uniqueId;
+        String email = "test_" + uniqueId + "@test.com";
+        String phone = "010" + String.format("%08d", System.nanoTime() % 100_000_000);
+
         MemberCreateRequest request = new MemberCreateRequest(
-                "testUser",
+                loginId,
                 "12345678",
                 "테스트",
                 "닉네임",
-                "test@test.com",
-                "01077777777"
+                email,
+                phone
         );
 
         mockMvc.perform(
@@ -47,30 +56,38 @@ public class MemberControllerTest {
     @Test
     void 중복_회원가입_API_실패() throws Exception {
 
+        String uniqueId = UUID.randomUUID().toString();
+
+        String loginId = "testUser_" + uniqueId;
+        String email = "test_" + uniqueId + "@test.com";
+        String phone = "010" + String.format("%08d", System.nanoTime() % 100_000_000);
+
         MemberCreateRequest request = new MemberCreateRequest(
-                "testUser",
+                loginId,
                 "12345678",
                 "테스트",
                 "닉네임",
-                "test@test.com",
-                "01088888888"
+                email,
+                phone
         );
 
-        // 먼저 가입
         mockMvc.perform(
-                post("/api/members")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request))
-        );
+                        post("/api/members")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(request))
+                )
+                .andExpect(status().isOk());
 
-        // 같은 loginId로 다시 가입
         MemberCreateRequest duplicateRequest = new MemberCreateRequest(
-                "testUser",
+                loginId,                       // 같은 ID
                 "12345678",
                 "테스트2",
                 "닉네임2",
-                "test2@test.com",
-                "01099999999"
+                "other_" + uniqueId + "@test.com",
+                "010" + String.format(
+                        "%08d",
+                        (System.nanoTime() + 1) % 100_000_000
+                )
         );
 
         mockMvc.perform(
@@ -78,6 +95,6 @@ public class MemberControllerTest {
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(duplicateRequest))
                 )
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isConflict());
     }
 }
