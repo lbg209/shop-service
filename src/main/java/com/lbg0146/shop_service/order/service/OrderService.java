@@ -6,6 +6,10 @@ import com.lbg0146.shop_service.cart.repository.CartItemRepository;
 import com.lbg0146.shop_service.cart.repository.CartRepository;
 import com.lbg0146.shop_service.common.code.entity.CommonCodeDetail;
 import com.lbg0146.shop_service.common.code.repository.CommonCodeDetailRepository;
+import com.lbg0146.shop_service.coupon.entity.Coupon;
+import com.lbg0146.shop_service.coupon.entity.CouponStatus;
+import com.lbg0146.shop_service.coupon.entity.MemberCoupon;
+import com.lbg0146.shop_service.coupon.repository.MemberCouponRepository;
 import com.lbg0146.shop_service.exception.BusinessException;
 import com.lbg0146.shop_service.exception.ErrorCode;
 import com.lbg0146.shop_service.member.entity.Member;
@@ -38,6 +42,7 @@ public class OrderService {
     private final MemberRepository memberRepository;
     private final ProductRepository productRepository;
     private final CommonCodeDetailRepository commonCodeDetailRepository;
+    private final MemberCouponRepository memberCouponRepository;
 
     @Transactional
     public Long createOrder(Long memberId, OrderCreateRequest request) {
@@ -86,25 +91,94 @@ public class OrderService {
             products.add(product);
         }
 
-        // 5. 주문 번호 생성
+        // 5. 할인 계산
+        long gradeDiscountAmount = member.getGrade().calculateDiscount(totalPrice);
+
+        // 쿠폰 할인
+        long couponDiscountAmount = 0L;
+
+        MemberCoupon memberCoupon = null;
+
+        if (request.memberCouponId() != null) {
+
+            memberCoupon = memberCouponRepository.findByIdAndMemberId(request.memberCouponId(), memberId)
+                    .orElseThrow(() -> new BusinessException(ErrorCode.COUPON_NOT_FOUND));
+
+            // 사용 가능한 쿠폰인지 확인
+            if (memberCoupon.getStatus() != CouponStatus.ISSUED) {
+
+                throw new BusinessException(ErrorCode.COUPON_NOT_USABLE);
+            }
+
+            Coupon coupon = memberCoupon.getCoupon();
+
+            // 최소 주문 금액 확인
+            if (totalPrice < coupon.getMinOrderAmount()) {
+
+                throw new BusinessException(ErrorCode.COUPON_MIN_ORDER_AMOUNT_NOT_MET);
+            }
+
+            String discountType = coupon.getDiscountType().getCodeValue();
+
+            // 정률 할인
+            if ("RATE".equals(discountType)) {
+
+                couponDiscountAmount = totalPrice * coupon.getDiscountValue() / 100;
+
+                // 최대 할인 금액 제한
+                if (coupon.getMaxDiscountAmount() != null) {
+
+                    couponDiscountAmount = Math.min(couponDiscountAmount, coupon.getMaxDiscountAmount());
+                }
+            // 정액 할인
+            } else if ("AMOUNT".equals(discountType)) {
+
+                couponDiscountAmount = coupon.getDiscountValue();
+
+            } else {
+
+                throw new BusinessException(ErrorCode.INVALID_DISCOUNT_TYPE);
+            }
+
+            // 할인 금액이 주문 금액을 초과하지 않도록 처리
+            couponDiscountAmount  = Math.min(couponDiscountAmount , totalPrice);
+
+            // 쿠폰 사용 처리
+            memberCoupon.use();
+        }
+        // 전체 할인 금액
+        long discountAmount = gradeDiscountAmount + couponDiscountAmount;
+
+        // 전체 할인 금액이 주문 금액을 초과하지 않도록 처리
+        discountAmount = Math.min(discountAmount, totalPrice);
+
+        // 최종 결제 금액
+        long finalPrice = totalPrice - discountAmount;
+
+        // 7. 주문 번호 생성
         String orderNumber = "ORD-" + UUID.randomUUID();
 
-        // 6. Order 생성
+// 8. Order 생성
         Order order = Order.createOrder(
                 orderNumber,
                 member,
                 orderStatus,
+                memberCoupon,
                 request.receiverName(),
                 request.receiverPhone(),
                 request.zipCode(),
                 request.address(),
                 request.detailAddress(),
-                totalPrice
+                totalPrice,
+                gradeDiscountAmount,
+                couponDiscountAmount,
+                discountAmount,
+                finalPrice
         );
 
         orderRepository.save(order);
 
-        // 7. OrderItem 생성 + 재고 차감
+        // 9. OrderItem 생성 + 재고 차감
         for (int i = 0; i < request.items().size(); i++) {
 
             OrderItemRequest itemRequest = request.items().get(i);
@@ -126,7 +200,7 @@ public class OrderService {
             orderItemRepository.save(orderItem);
         }
 
-        // 8. 주문 ID 반환
+        // 10. 주문 ID 반환
         return order.getId();
     }
 
@@ -134,12 +208,12 @@ public class OrderService {
     public Long createCartOrder(Long memberId, OrderCreateRequest request) {
 
         // 1. 회원 조회
-        Member member = memberRepository.findByIdAndDeletedAtIsNull(memberId).orElseThrow(() ->
-                        new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
+        Member member = memberRepository.findByIdAndDeletedAtIsNull(memberId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
 
         // 2. 회원의 장바구니 조회
-        Cart cart = cartRepository.findByMemberId(member.getId()).orElseThrow(() ->
-                        new BusinessException(ErrorCode.CART_NOT_FOUND));
+        Cart cart = cartRepository.findByMemberId(member.getId())
+                .orElseThrow(() -> new BusinessException(ErrorCode.CART_NOT_FOUND));
 
         // 3. 장바구니 상품 조회
         List<CartItem> cartItems = cartItemRepository.findAllByCartId(cart.getId());
@@ -152,24 +226,28 @@ public class OrderService {
         // 4. CartItem → OrderItemRequest 변환
         List<OrderItemRequest> orderItems = cartItems.stream()
                 .map(cartItem -> new OrderItemRequest(
-                                cartItem.getProduct().getId(),
-                                cartItem.getQuantity()
-                            )
-                ).toList();
+                        cartItem.getProduct().getId(),
+                        cartItem.getQuantity()
+                ))
+                .toList();
 
-        // 5. 기존 주문 생성 로직 재사용
+        // 5. 장바구니 주문 요청 생성
+        // 쿠폰 ID를 그대로 전달하여 createOrder()에서
+        // 등급 할인 + 쿠폰 할인 계산을 처리한다.
         OrderCreateRequest orderRequest = new OrderCreateRequest(
                 orderItems,
                 request.receiverName(),
                 request.receiverPhone(),
                 request.zipCode(),
                 request.address(),
-                request.detailAddress()
+                request.detailAddress(),
+                request.memberCouponId()
         );
 
+        // 6. 기존 주문 생성 로직 재사용
         Long orderId = createOrder(member.getId(), orderRequest);
 
-        // 6. 주문 완료 후 장바구니 비우기
+        // 7. 주문 완료 후 장바구니 비우기
         cartItems.forEach(cartItem -> cartItemRepository.delete(cartItem));
 
         return orderId;

@@ -8,6 +8,7 @@ public record OrderCreateRequest(
         String receiverPhone,
         String zipCode,
         String address,
-        String detailAddress
+        String detailAddress,
+        Long memberCouponId
 ) {
 }

@@ -1,10 +1,16 @@
 package com.lbg0146.shop_service.support;
 
+import com.lbg0146.shop_service.cart.entity.Cart;
+import com.lbg0146.shop_service.cart.entity.CartItem;
+import com.lbg0146.shop_service.cart.repository.CartItemRepository;
+import com.lbg0146.shop_service.cart.repository.CartRepository;
 import com.lbg0146.shop_service.common.code.entity.CommonCodeDetail;
 import com.lbg0146.shop_service.common.code.repository.CommonCodeDetailRepository;
 import com.lbg0146.shop_service.common.enums.Role;
 import com.lbg0146.shop_service.coupon.entity.Coupon;
+import com.lbg0146.shop_service.coupon.entity.MemberCoupon;
 import com.lbg0146.shop_service.coupon.repository.CouponRepository;
+import com.lbg0146.shop_service.coupon.repository.MemberCouponRepository;
 import com.lbg0146.shop_service.grade.entity.Grade;
 import com.lbg0146.shop_service.grade.repository.GradeRepository;
 import com.lbg0146.shop_service.member.entity.Member;
@@ -22,7 +28,6 @@ import com.lbg0146.shop_service.product.repository.CategoryRepository;
 import com.lbg0146.shop_service.product.repository.ProductRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -39,6 +44,9 @@ public class TestDataFactory {
     private final PaymentService paymentService;
     private final CouponRepository couponRepository;
     private final CommonCodeDetailRepository commonCodeDetailRepository;
+    private final MemberCouponRepository memberCouponRepository;
+    private final CartRepository cartRepository;
+    private final CartItemRepository cartItemRepository;
 
     public Member createMember() {
 
@@ -85,26 +93,18 @@ public class TestDataFactory {
         Product product = createProduct();
 
         OrderCreateRequest request = new OrderCreateRequest(
-                List.of(
-                        new OrderItemRequest(
-                                product.getId(),
-                                1
-                        )
-                ),
+                List.of(new OrderItemRequest(product.getId(), 1)),
                 "테스터",
                 "01012345678",
                 "12345",
                 "서울시 강남구",
-                "101호"
+                "101호",
+                null
         );
 
-        Long orderId = orderService.createOrder(
-                member.getId(),
-                request
-        );
+        Long orderId = orderService.createOrder(member.getId(), request);
 
-        return orderRepository.findById(orderId)
-                .orElseThrow();
+        return orderRepository.findById(orderId).orElseThrow();
     }
 
     public Order createPaidOrder() {
@@ -120,6 +120,25 @@ public class TestDataFactory {
 
         return orderRepository.findById(order.getId())
                 .orElseThrow();
+    }
+
+    public Cart createCart(Member member) {
+
+        Cart cart = Cart.createCart(member);
+
+        return cartRepository.save(cart);
+    }
+
+    public CartItem createCartItem(Cart cart, Product product, int quantity) {
+
+        CartItem cartItem =
+                CartItem.createCartItem(
+                        cart,
+                        product,
+                        quantity
+                );
+
+        return cartItemRepository.save(cartItem);
     }
 
     public Coupon createRateCoupon() {
@@ -138,5 +157,68 @@ public class TestDataFactory {
         );
 
         return couponRepository.save(coupon);
+    }
+
+    public Coupon createAmountCoupon() {
+
+        CommonCodeDetail discountType = commonCodeDetailRepository.findByGroupGroupCodeAndCodeValue(
+                "DISCOUNT_TYPE",
+                "AMOUNT"
+        ).orElseThrow();
+
+        Coupon coupon = Coupon.createCoupon(
+                discountType,
+                "테스트 정액 쿠폰",
+                5000,
+                10000L,
+                null,
+                30
+        );
+
+        return couponRepository.save(coupon);
+    }
+
+    public Coupon createRateCouponWithMinOrderAmount(Long minOrderAmount) {
+
+        CommonCodeDetail discountType = commonCodeDetailRepository.findByGroupGroupCodeAndCodeValue(
+                    "DISCOUNT_TYPE",
+                        "RATE"
+                ).orElseThrow();
+
+        Coupon coupon = Coupon.createCoupon(
+                discountType,
+                "테스트 최소주문금액 쿠폰",
+                10,
+                minOrderAmount,
+                5000L,
+                30
+        );
+
+        return couponRepository.save(coupon);
+    }
+
+    public MemberCoupon createMemberCoupon(Member member, Coupon coupon) {
+
+        MemberCoupon memberCoupon = MemberCoupon.createMemberCoupon(member, coupon);
+
+        return memberCouponRepository.save(memberCoupon);
+    }
+
+    public Member createVipMember() {
+
+        Grade grade = gradeRepository.findByGradeCode("VIP").orElseThrow();
+
+        Member member = Member.createMember(
+                grade,
+                "vipUser",
+                "1234",
+                "VIP테스트",
+                "VIP닉네임",
+                "vip@test.com",
+                "01099998888",
+                Role.USER
+        );
+
+        return memberRepository.save(member);
     }
 }

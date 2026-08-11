@@ -1,5 +1,8 @@
 package com.lbg0146.shop_service.order;
 
+import com.lbg0146.shop_service.cart.entity.Cart;
+import com.lbg0146.shop_service.coupon.entity.Coupon;
+import com.lbg0146.shop_service.coupon.entity.MemberCoupon;
 import com.lbg0146.shop_service.member.entity.Member;
 import com.lbg0146.shop_service.order.dto.request.OrderCreateRequest;
 import com.lbg0146.shop_service.order.dto.request.OrderItemRequest;
@@ -52,7 +55,8 @@ public class OrderControllerTest {
                 "01012345678",
                 "12345",
                 "서울시 강남구",
-                "101호"
+                "101호",
+                null
         );
 
         mockMvc.perform(
@@ -82,7 +86,8 @@ public class OrderControllerTest {
                 "01012345678",
                 "12345",
                 "서울시 강남구",
-                "101호"
+                "101호",
+                null
         );
 
         mockMvc.perform(
@@ -92,5 +97,71 @@ public class OrderControllerTest {
                                 .content(objectMapper.writeValueAsString(request))
                 )
                 .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void 장바구니_주문_성공() throws Exception {
+
+        Member member = testDataFactory.createMember();
+        Product product = testDataFactory.createProduct();
+
+        Cart cart = testDataFactory.createCart(member);
+
+        testDataFactory.createCartItem(cart, product, 2);
+
+        OrderCreateRequest request = new OrderCreateRequest(
+                List.of(),
+                "테스터",
+                "01012345678",
+                "12345",
+                "서울시 강남구",
+                "101호",
+                null
+        );
+
+        mockMvc.perform(
+                        post("/api/orders/cart")
+                                .param(
+                                        "memberId",
+                                        member.getId().toString()
+                                )
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(
+                                        objectMapper.writeValueAsString(request)
+                                )
+                )
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void 쿠폰을_적용해서_단건_주문_성공() throws Exception {
+
+        Member member = testDataFactory.createMember();
+        Product product = testDataFactory.createProduct();
+        Coupon coupon = testDataFactory.createRateCoupon();
+
+        MemberCoupon memberCoupon = testDataFactory.createMemberCoupon(member, coupon);
+
+        OrderItemRequest item = new OrderItemRequest(product.getId(), 1);
+
+        OrderCreateRequest request = new OrderCreateRequest(
+                List.of(item),
+                "테스터",
+                "01012345678",
+                "12345",
+                "서울시 강남구",
+                "101호",
+                memberCoupon.getId()
+        );
+
+        mockMvc.perform(
+                        post("/api/orders/direct")
+                                .param("memberId", member.getId().toString())
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(
+                                        objectMapper.writeValueAsString(request)
+                                )
+                )
+                .andExpect(status().isOk());
     }
 }

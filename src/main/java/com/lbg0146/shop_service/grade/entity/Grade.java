@@ -33,4 +33,9 @@ public class Grade extends BaseEntity {
 
     @Column(nullable = false)
     private Integer discountRate;
+
+    public long calculateDiscount(long totalPrice) {
+
+        return totalPrice * discountRate / 100;
+    }
 }

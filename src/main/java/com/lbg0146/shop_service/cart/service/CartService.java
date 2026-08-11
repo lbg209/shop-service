@@ -35,12 +35,10 @@ public class CartService {
 
         Member member = getMember(memberId);
 
-        Cart cart = cartRepository.findByMemberId(member.getId())
-                .orElseThrow(() ->
-                        new BusinessException(ErrorCode.CART_NOT_FOUND));
+        Cart cart = cartRepository.findByMemberId(member.getId()).orElseThrow(() ->
+                new BusinessException(ErrorCode.CART_NOT_FOUND));
 
-        List<CartItemResponse> items =
-                cartItemRepository.findAllByCartId(cart.getId())
+        List<CartItemResponse> items = cartItemRepository.findAllByCartId(cart.getId())
                         .stream()
                         .map(item -> new CartItemResponse(
                                 item.getId(),
