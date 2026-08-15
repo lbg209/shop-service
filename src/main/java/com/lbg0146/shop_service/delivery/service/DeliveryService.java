@@ -8,6 +8,7 @@ import com.lbg0146.shop_service.exception.BusinessException;
 import com.lbg0146.shop_service.exception.ErrorCode;
 import com.lbg0146.shop_service.order.entity.Order;
 import com.lbg0146.shop_service.order.repository.OrderRepository;
+import com.lbg0146.shop_service.order.service.OrderStatusHistoryService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,6 +21,7 @@ public class DeliveryService {
     private final DeliveryRepository deliveryRepository;
     private final OrderRepository orderRepository;
     private final CommonCodeDetailRepository commonCodeDetailRepository;
+    private final OrderStatusHistoryService orderStatusHistoryService;
 
     @Transactional
     public Long createDelivery(Long orderId) {
@@ -41,9 +43,9 @@ public class DeliveryService {
 
         // 4. 배송 상태 조회
         CommonCodeDetail deliveryStatus = commonCodeDetailRepository.findByGroupGroupCodeAndCodeValue(
-                                "DELIVERY_STATUS",
-                                "READY"
-                        ).orElseThrow(() -> new BusinessException(ErrorCode.DELIVERY_STATUS_NOT_FOUND));
+                "DELIVERY_STATUS",
+                "READY"
+        ).orElseThrow(() -> new BusinessException(ErrorCode.DELIVERY_STATUS_NOT_FOUND));
 
         // 5. 배송 생성
         Delivery delivery = Delivery.createDelivery(order, deliveryStatus);
@@ -61,8 +63,7 @@ public class DeliveryService {
         CommonCodeDetail deliveryStatus = commonCodeDetailRepository.findByGroupGroupCodeAndCodeValue(
                 "DELIVERY_STATUS",
                         status
-                )
-                .orElseThrow(() -> new BusinessException(ErrorCode.DELIVERY_STATUS_NOT_FOUND));
+        ).orElseThrow(() -> new BusinessException(ErrorCode.DELIVERY_STATUS_NOT_FOUND));
 
         delivery.changeStatus(deliveryStatus);
 
@@ -70,11 +71,11 @@ public class DeliveryService {
 
             CommonCodeDetail orderStatus = commonCodeDetailRepository.findByGroupGroupCodeAndCodeValue(
                             "ORDER_STATUS",
-                            "SHIPPING")
-                            .orElseThrow(() -> new BusinessException(ErrorCode.ORDER_STATUS_NOT_FOUND));
+                            "SHIPPING"
+            ).orElseThrow(() -> new BusinessException(ErrorCode.ORDER_STATUS_NOT_FOUND));
 
             delivery.startShipping();
-            delivery.getOrder().changeStatus(orderStatus);
+            orderStatusHistoryService.changeStatus(delivery.getOrder(), orderStatus, null);
         }
 
         if ("DELIVERED".equals(status)) {
@@ -82,10 +83,10 @@ public class DeliveryService {
             CommonCodeDetail orderStatus = commonCodeDetailRepository.findByGroupGroupCodeAndCodeValue(
                             "ORDER_STATUS",
                             "DELIVERED"
-                            ).orElseThrow(() -> new BusinessException(ErrorCode.ORDER_STATUS_NOT_FOUND));
+            ).orElseThrow(() -> new BusinessException(ErrorCode.ORDER_STATUS_NOT_FOUND));
 
             delivery.completeDelivery();
-            delivery.getOrder().changeStatus(orderStatus);
+            orderStatusHistoryService.changeStatus(delivery.getOrder(), orderStatus, null);
         }
     }
 }

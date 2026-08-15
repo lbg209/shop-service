@@ -54,4 +54,37 @@ public class MemberHistory extends BaseHistoryEntity {
     private LocalDateTime validFrom;
 
     private LocalDateTime validTo;
+
+    public static MemberHistory create(
+            Member member,
+            CommonCodeDetail changeType,
+            String loginId,
+            String name,
+            String email,
+            String phone,
+            String role,
+            Grade grade,
+            Member changedBy,
+            LocalDateTime validFrom,
+            LocalDateTime validTo
+    ) {
+        MemberHistory history = new MemberHistory();
+        history.member = member;
+        history.changeType = changeType;
+        history.loginId = loginId;
+        history.name = name;
+        history.email = email;
+        history.phone = phone;
+        history.role = role;
+        history.grade = grade;
+        history.changedBy = changedBy;
+        history.validFrom = validFrom;
+        history.validTo = validTo;
+
+        return history;
+    }
+
+    public void close(LocalDateTime validTo) {
+        this.validTo = validTo;
+    }
 }

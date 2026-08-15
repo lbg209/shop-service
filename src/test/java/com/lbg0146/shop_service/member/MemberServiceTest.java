@@ -1,11 +1,9 @@
 package com.lbg0146.shop_service.member;
 
 import com.lbg0146.shop_service.exception.BusinessException;
-import com.lbg0146.shop_service.grade.repository.GradeRepository;
 import com.lbg0146.shop_service.member.dto.request.MemberCreateRequest;
 import com.lbg0146.shop_service.member.dto.request.MemberUpdateRequest;
 import com.lbg0146.shop_service.member.dto.response.MemberResponse;
-import com.lbg0146.shop_service.member.repository.MemberRepository;
 import com.lbg0146.shop_service.member.service.MemberService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

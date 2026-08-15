@@ -40,9 +40,10 @@ public class ProductHistory extends BaseHistoryEntity {
     @Column(length = 500)
     private String description;
 
-    // 판매 상태 당시 값 저장
+    // 상품 상태 스냅샷
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
-    private String status;
+    private ProductStatus status;
 
     // 변경한 관리자
     @ManyToOne(fetch = FetchType.LAZY)
@@ -53,4 +54,31 @@ public class ProductHistory extends BaseHistoryEntity {
     private LocalDateTime validFrom;
 
     private LocalDateTime validTo;
+
+    public static ProductHistory create(
+            Product product,
+            CommonCodeDetail changeType,
+            Member changedBy,
+            LocalDateTime validFrom,
+            LocalDateTime validTo
+    ) {
+        ProductHistory history = new ProductHistory();
+
+        history.product = product;
+        history.changeType = changeType;
+        history.productName = product.getProductName();
+        history.price = product.getPrice();
+        history.stockQuantity = product.getStockQuantity();
+        history.description = product.getDescription();
+        history.status = product.getStatus();
+        history.changedBy = changedBy;
+        history.validFrom = validFrom;
+        history.validTo = validTo;
+
+        return history;
+    }
+
+    public void close(LocalDateTime validTo) {
+        this.validTo = validTo;
+    }
 }

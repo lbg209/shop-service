@@ -22,10 +22,12 @@ import com.lbg0146.shop_service.order.repository.OrderItemRepository;
 import com.lbg0146.shop_service.order.repository.OrderRepository;
 import com.lbg0146.shop_service.product.entity.Product;
 import com.lbg0146.shop_service.product.repository.ProductRepository;
+import com.lbg0146.shop_service.product.service.ProductHistoryService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -43,6 +45,8 @@ public class OrderService {
     private final ProductRepository productRepository;
     private final CommonCodeDetailRepository commonCodeDetailRepository;
     private final MemberCouponRepository memberCouponRepository;
+    private final OrderStatusHistoryService orderStatusHistoryService;
+    private final ProductHistoryService productHistoryService;
 
     @Transactional
     public Long createOrder(Long memberId, OrderCreateRequest request) {
@@ -62,27 +66,20 @@ public class OrderService {
                                 "ORDERED"
                 ).orElseThrow(() -> new BusinessException(ErrorCode.ORDER_STATUS_NOT_FOUND));
 
-        // 4. 상품 조회 + 검증 + 총액 계산
+        // 4. 상품 조회 + 총액 계산
         List<Product> products = new ArrayList<>();
 
         long totalPrice = 0L;
 
         for (OrderItemRequest itemRequest : request.items()) {
 
-            Product product = productRepository.findByIdAndDeletedAtIsNull(itemRequest.productId())
-                    .orElseThrow(() -> new BusinessException(ErrorCode.PRODUCT_NOT_FOUND));
-
             // 주문 수량 검증
             if (itemRequest.quantity() <= 0) {
-
                 throw new BusinessException(ErrorCode.INVALID_QUANTITY);
             }
 
-            // 재고 확인
-            if (product.getStockQuantity() < itemRequest.quantity()) {
-
-                throw new BusinessException(ErrorCode.INSUFFICIENT_STOCK);
-            }
+            Product product = productRepository.findByIdAndDeletedAtIsNull(itemRequest.productId())
+                    .orElseThrow(() -> new BusinessException(ErrorCode.PRODUCT_NOT_FOUND));
 
             // 총 주문 금액 계산
             totalPrice += product.getPrice() * itemRequest.quantity();
@@ -158,7 +155,7 @@ public class OrderService {
         // 7. 주문 번호 생성
         String orderNumber = "ORD-" + UUID.randomUUID();
 
-// 8. Order 생성
+        // 8. Order 생성
         Order order = Order.createOrder(
                 orderNumber,
                 member,
@@ -178,6 +175,9 @@ public class OrderService {
 
         orderRepository.save(order);
 
+        // 주문 생성 이력: ORDERED / CREATE
+        orderStatusHistoryService.recordCreated(order, orderStatus, member);
+
         // 9. OrderItem 생성 + 재고 차감
         for (int i = 0; i < request.items().size(); i++) {
 
@@ -185,8 +185,24 @@ public class OrderService {
 
             Product product = products.get(i);
 
-            // 재고 차감
-            product.decreaseStock(itemRequest.quantity());
+            boolean statusChanged = product.decreaseStock(itemRequest.quantity());
+
+            // 재고가 0이 되어 SOLD_OUT으로 변경된 경우
+            if (statusChanged) {
+
+                LocalDateTime now = LocalDateTime.now();
+
+                productHistoryService.closeCurrentHistory(
+                        product.getId(),
+                        now
+                );
+
+                productHistoryService.saveHistory(
+                        product,
+                        "UPDATE",
+                        null
+                );
+            }
 
             // 주문 상품 생성
             OrderItem orderItem = OrderItem.createOrderItem(

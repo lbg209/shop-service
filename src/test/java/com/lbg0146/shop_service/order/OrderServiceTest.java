@@ -11,8 +11,10 @@ import com.lbg0146.shop_service.order.dto.request.OrderCreateRequest;
 import com.lbg0146.shop_service.order.dto.request.OrderItemRequest;
 import com.lbg0146.shop_service.order.entity.Order;
 import com.lbg0146.shop_service.order.entity.OrderItem;
+import com.lbg0146.shop_service.order.entity.OrderStatusHistory;
 import com.lbg0146.shop_service.order.repository.OrderItemRepository;
 import com.lbg0146.shop_service.order.repository.OrderRepository;
+import com.lbg0146.shop_service.order.repository.OrderStatusHistoryRepository;
 import com.lbg0146.shop_service.order.service.OrderService;
 import com.lbg0146.shop_service.product.entity.Product;
 import com.lbg0146.shop_service.support.TestDataFactory;
@@ -46,6 +48,9 @@ public class OrderServiceTest {
 
     @Autowired
     private CartItemRepository cartItemRepository;
+
+    @Autowired
+    private OrderStatusHistoryRepository orderStatusHistoryRepository;
 
     @Test
     void 단건_주문이_정상적으로_생성() {
@@ -425,5 +430,33 @@ public class OrderServiceTest {
 
         assertThat(order.getTotalPrice()).isEqualTo(totalPrice);
         assertThat(order.getCouponDiscountAmount()).isEqualTo(expectedCouponDiscount);
+    }
+
+    @Test
+    void 주문_생성시_ORDERED_CREATE_상태이력이_저장된다() {
+        Member member = testDataFactory.createMember();
+        Product product = testDataFactory.createProduct();
+
+        OrderCreateRequest request = new OrderCreateRequest(
+                List.of(new OrderItemRequest(product.getId(), 2)),
+                "테스터",
+                "01012345678",
+                "12345",
+                "서울시 강남구",
+                "101호",
+                null
+        );
+
+        Long orderId = orderService.createOrder(member.getId(), request);
+
+        List<OrderStatusHistory> histories = orderStatusHistoryRepository.findAllByOrderId(orderId);
+
+        assertThat(histories).hasSize(1);
+
+        OrderStatusHistory history = histories.get(0);
+
+        assertThat(history.getStatus().getCodeValue()).isEqualTo("ORDERED");
+        assertThat(history.getChangeType().getCodeValue()).isEqualTo("CREATE");
+        assertThat(history.getChangedBy().getId()).isEqualTo(member.getId());
     }
 }

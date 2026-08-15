@@ -14,6 +14,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -23,7 +24,7 @@ public class MemberService {
 
     private final MemberRepository memberRepository;
     private final GradeRepository gradeRepository;
-
+    private final MemberHistoryService memberHistoryService;
 
     @Transactional
     public Long join(MemberCreateRequest request) {
@@ -45,6 +46,12 @@ public class MemberService {
         );
 
         Member saveMember = memberRepository.save(member);
+
+        memberHistoryService.saveHistory(
+                saveMember,
+                "CREATE",
+                null
+        );
 
         return saveMember.getId();
     }
@@ -77,7 +84,18 @@ public class MemberService {
         Member member = memberRepository.findByIdAndDeletedAtIsNull(memberId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
 
+        memberHistoryService.closeCurrentHistory(
+                memberId,
+                LocalDateTime.now()
+        );
+
         member.update(request.nickname(), request.phone());
+
+        memberHistoryService.saveHistory(
+                member,
+                "UPDATE",
+                null
+        );
     }
 
     @Transactional
@@ -86,7 +104,17 @@ public class MemberService {
         Member member = memberRepository.findByIdAndDeletedAtIsNull(memberId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
 
+        LocalDateTime now = LocalDateTime.now();
+
+        memberHistoryService.closeCurrentHistory(memberId, now);
+
         member.delete();
+
+        memberHistoryService.saveHistory(
+                member,
+                "DELETE",
+                null
+        );
     }
     
     public List<MemberResponse> findMembers() {

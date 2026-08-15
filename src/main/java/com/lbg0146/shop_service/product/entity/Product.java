@@ -84,7 +84,11 @@ public class Product extends BaseEntity {
         this.status = status;
     }
     // 동시성 문제 발생 !!!!!
-    public void decreaseStock(Integer quantity) {
+    public boolean decreaseStock(int quantity) {
+
+        if (quantity <= 0) {
+            throw new BusinessException(ErrorCode.INVALID_QUANTITY);
+        }
 
         if (stockQuantity < quantity) {
             throw new BusinessException(ErrorCode.INSUFFICIENT_STOCK);
@@ -92,8 +96,13 @@ public class Product extends BaseEntity {
 
         stockQuantity -= quantity;
 
-        if (stockQuantity == 0) {
+        if (stockQuantity == 0
+                && status != ProductStatus.SOLD_OUT) {
+
             status = ProductStatus.SOLD_OUT;
+            return true;
         }
+
+        return false;
     }
 }

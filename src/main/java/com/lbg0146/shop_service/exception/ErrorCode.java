@@ -74,7 +74,9 @@ public enum ErrorCode {
 
     COUPON_ALREADY_ISSUED(HttpStatus.BAD_REQUEST, "이미 발급받은 쿠폰입니다."),
 
-    COUPON_MIN_ORDER_AMOUNT_NOT_MET(HttpStatus.BAD_REQUEST, "최소 주문 금액이 부족합니다.");
+    COUPON_MIN_ORDER_AMOUNT_NOT_MET(HttpStatus.BAD_REQUEST, "최소 주문 금액이 부족합니다."),
+
+    HISTORY_CHANGE_TYPE_NOT_FOUND(HttpStatus.NOT_FOUND, "이력 변경 유형 코드를 찾을 수 없습니다.");
 
     private final HttpStatus status;
     private final String message;

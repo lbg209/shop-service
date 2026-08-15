@@ -33,4 +33,20 @@ public class OrderStatusHistory extends BaseHistoryEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "changed_by")
     private Member changedBy;
+
+    public static OrderStatusHistory create(
+            Order order,
+            CommonCodeDetail status,
+            CommonCodeDetail changeType,
+            Member changedBy
+    ) {
+        OrderStatusHistory history = new OrderStatusHistory();
+
+        history.order = order;
+        history.status = status;
+        history.changeType = changeType;
+        history.changedBy = changedBy; // 시스템 처리면 null
+
+        return history;
+    }
 }

@@ -6,6 +6,7 @@ import com.lbg0146.shop_service.exception.BusinessException;
 import com.lbg0146.shop_service.exception.ErrorCode;
 import com.lbg0146.shop_service.order.entity.Order;
 import com.lbg0146.shop_service.order.repository.OrderRepository;
+import com.lbg0146.shop_service.order.service.OrderStatusHistoryService;
 import com.lbg0146.shop_service.payment.dto.request.PaymentCreateRequest;
 import com.lbg0146.shop_service.payment.entity.Payment;
 import com.lbg0146.shop_service.payment.repository.PaymentRepository;
@@ -24,6 +25,7 @@ public class PaymentService {
     private final PaymentRepository paymentRepository;
     private final OrderRepository orderRepository;
     private final CommonCodeDetailRepository commonCodeDetailRepository;
+    private final OrderStatusHistoryService orderStatusHistoryService;
 
     @Transactional
     public Long createPayment(PaymentCreateRequest request) {
@@ -72,8 +74,8 @@ public class PaymentService {
 
         paymentRepository.save(payment);
 
-        // 8. 주문 상태를 결제완료로 변경
-        order.changeStatus(orderStatus);
+        // 8. 주문 현재 상태 변경 + 상태 이력 저장
+        orderStatusHistoryService.changeStatus(order, orderStatus, null);
 
         return payment.getId();
     }
