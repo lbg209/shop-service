@@ -1,6 +1,7 @@
 package com.lbg0146.shop_service.payment;
 
 import com.lbg0146.shop_service.exception.BusinessException;
+import com.lbg0146.shop_service.member.entity.Member;
 import com.lbg0146.shop_service.order.entity.Order;
 import com.lbg0146.shop_service.order.repository.OrderRepository;
 import com.lbg0146.shop_service.payment.dto.request.PaymentCreateRequest;
@@ -37,7 +38,8 @@ public class PaymentServiceTest {
     @Test
     void 결제에_성공하면_결제가_생성되고_주문상태가_PAID() {
 
-        Order order = testDataFactory.createOrder();
+        Member member = testDataFactory.createMember();
+        Order order = testDataFactory.createOrder(member);
 
         PaymentCreateRequest request = new PaymentCreateRequest(
                 order.getId(),
@@ -64,7 +66,8 @@ public class PaymentServiceTest {
     @Test
     void 이미_결제된_주문은_다시_결제_불가능() {
 
-        Order order = testDataFactory.createOrder();
+        Member member = testDataFactory.createMember();
+        Order order = testDataFactory.createOrder(member);
 
         PaymentCreateRequest request = new PaymentCreateRequest(
                 order.getId(),

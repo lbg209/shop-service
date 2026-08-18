@@ -101,12 +101,16 @@ public class AddressService {
     @Transactional
     public void changeDefaultAddress(Long memberId, Long addressId) {
 
+        // 1. 기존 기본 배송지를 모두 false로 벌크 업데이트 (다른 스레드 대기)
+        addressRepository.clearDefaultAddress(memberId);
+
+        // 2. 새로운 배송지를 true로 변경
         Address newDefaultAddress = addressRepository.findByIdAndMemberId(addressId, memberId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.ADDRESS_NOT_FOUND));
 
         // 동시성 문제 발생 !!
-        addressRepository.findByMemberIdAndIsDefaultTrue(memberId)
-                .ifPresent(address -> address.updateDefault(false));
+        //addressRepository.findByMemberIdAndIsDefaultTrue(memberId)
+        //        .ifPresent(address -> address.updateDefault(false));
 
         newDefaultAddress.updateDefault(true);
     }

@@ -16,6 +16,8 @@ import com.lbg0146.shop_service.member.entity.Member;
 import com.lbg0146.shop_service.member.repository.MemberRepository;
 import com.lbg0146.shop_service.order.dto.request.OrderCreateRequest;
 import com.lbg0146.shop_service.order.dto.request.OrderItemRequest;
+import com.lbg0146.shop_service.order.dto.response.OrderDetailResponse;
+import com.lbg0146.shop_service.order.dto.response.OrderResponse;
 import com.lbg0146.shop_service.order.entity.Order;
 import com.lbg0146.shop_service.order.entity.OrderItem;
 import com.lbg0146.shop_service.order.repository.OrderItemRepository;
@@ -78,7 +80,12 @@ public class OrderService {
                 throw new BusinessException(ErrorCode.INVALID_QUANTITY);
             }
 
-            Product product = productRepository.findByIdAndDeletedAtIsNull(itemRequest.productId())
+            // 변경 전: 일반 조회 (동시성 문제 및 트랜잭션 충돌 발생)
+            //Product product = productRepository.findByIdAndDeletedAtIsNull(itemRequest.productId())
+            //        .orElseThrow(() -> new BusinessException(ErrorCode.PRODUCT_NOT_FOUND));
+
+            // 변경 후: 비관적 락을 걸고 조회
+            Product product = productRepository.findByIdAndDeletedAtIsNullWithLock(itemRequest.productId())
                     .orElseThrow(() -> new BusinessException(ErrorCode.PRODUCT_NOT_FOUND));
 
             // 총 주문 금액 계산
@@ -231,8 +238,12 @@ public class OrderService {
         Cart cart = cartRepository.findByMemberId(member.getId())
                 .orElseThrow(() -> new BusinessException(ErrorCode.CART_NOT_FOUND));
 
+        // 변경 전: N+1 문제 발생 (장바구니 상품 개수만큼 Product 단건 쿼리 발생)
         // 3. 장바구니 상품 조회
-        List<CartItem> cartItems = cartItemRepository.findAllByCartId(cart.getId());
+        //List<CartItem> cartItems = cartItemRepository.findAllByCartId(cart.getId());
+
+        // ✅ 변경 후: 앞서 만든 Fetch Join 쿼리 재사용! (단 1번의 쿼리로 최적화)
+        List<CartItem> cartItems = cartItemRepository.findAllByCartIdWithProduct(cart.getId());
 
         if (cartItems.isEmpty()) {
 
@@ -267,5 +278,30 @@ public class OrderService {
         cartItems.forEach(cartItem -> cartItemRepository.delete(cartItem));
 
         return orderId;
+    }
+
+    public List<OrderResponse> findOrders(Long memberId) {
+
+        List<Order> orders = orderRepository.findAllByMemberIdWithOrderItemsAndDelivery(memberId);
+
+        return orders.stream()
+                .map(order ->
+                        OrderResponse.from(
+                                order,
+                                order.getOrderItems()
+                        )
+                )
+                .toList();
+    }
+
+    public OrderDetailResponse findOrderDetail(Long memberId, Long orderId) {
+
+        Order order = orderRepository.findByIdWithOrderItemsDeliveryAndPayment(orderId, memberId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.ORDER_NOT_FOUND));
+
+        return OrderDetailResponse.from(
+                order,
+                order.getOrderItems()
+        );
     }
 }

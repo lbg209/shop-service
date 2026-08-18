@@ -116,10 +116,18 @@ public class MemberService {
                 null
         );
     }
-    
+
+    // N + 1 발생 !!
     public List<MemberResponse> findMembers() {
 
+        /*
         return memberRepository.findAllByDeletedAtIsNull()
+                .stream()
+                .map(MemberResponse::from)
+                .toList();
+         */
+
+        return memberRepository.findAllByDeletedAtIsNullWithGrade()
                 .stream()
                 .map(MemberResponse::from)
                 .toList();

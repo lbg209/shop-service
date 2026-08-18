@@ -11,6 +11,8 @@ import com.lbg0146.shop_service.coupon.entity.Coupon;
 import com.lbg0146.shop_service.coupon.entity.MemberCoupon;
 import com.lbg0146.shop_service.coupon.repository.CouponRepository;
 import com.lbg0146.shop_service.coupon.repository.MemberCouponRepository;
+import com.lbg0146.shop_service.delivery.entity.Delivery;
+import com.lbg0146.shop_service.delivery.repository.DeliveryRepository;
 import com.lbg0146.shop_service.grade.entity.Grade;
 import com.lbg0146.shop_service.grade.repository.GradeRepository;
 import com.lbg0146.shop_service.member.entity.Member;
@@ -21,6 +23,8 @@ import com.lbg0146.shop_service.order.entity.Order;
 import com.lbg0146.shop_service.order.repository.OrderRepository;
 import com.lbg0146.shop_service.order.service.OrderService;
 import com.lbg0146.shop_service.payment.dto.request.PaymentCreateRequest;
+import com.lbg0146.shop_service.payment.entity.Payment;
+import com.lbg0146.shop_service.payment.repository.PaymentRepository;
 import com.lbg0146.shop_service.payment.service.PaymentService;
 import com.lbg0146.shop_service.product.entity.Category;
 import com.lbg0146.shop_service.product.entity.Product;
@@ -29,6 +33,7 @@ import com.lbg0146.shop_service.product.repository.ProductRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Component
@@ -47,6 +52,8 @@ public class TestDataFactory {
     private final MemberCouponRepository memberCouponRepository;
     private final CartRepository cartRepository;
     private final CartItemRepository cartItemRepository;
+    private final DeliveryRepository deliveryRepository;
+    private final PaymentRepository paymentRepository;
 
     public Member createMember() {
 
@@ -60,7 +67,7 @@ public class TestDataFactory {
                 "테스트회원",
                 "테스트닉네임",
                 "payment@test.com",
-                "01012345678",
+                "01012375678",
                 Role.USER
         );
 
@@ -80,16 +87,15 @@ public class TestDataFactory {
                 category,
                 "테스트상품",
                 10000L,
-                100,
+                5,
                 "테스트 상품"
         );
 
         return productRepository.save(product);
     }
 
-    public Order createOrder() {
+    public Order createOrder(Member member) {
 
-        Member member = createMember();
         Product product = createProduct();
 
         OrderCreateRequest request = new OrderCreateRequest(
@@ -107,9 +113,9 @@ public class TestDataFactory {
         return orderRepository.findById(orderId).orElseThrow();
     }
 
-    public Order createPaidOrder() {
+    public Order createPaidOrder(Member member) {
 
-        Order order = createOrder();
+        Order order = createOrder(member);
 
         paymentService.createPayment(
                 new PaymentCreateRequest(
@@ -120,6 +126,51 @@ public class TestDataFactory {
 
         return orderRepository.findById(order.getId())
                 .orElseThrow();
+    }
+
+    public Delivery createDelivery(Order order) {
+
+        CommonCodeDetail deliveryStatus =
+                commonCodeDetailRepository
+                        .findByGroupGroupCodeAndCodeValue(
+                                "DELIVERY_STATUS",
+                                "READY"
+                        )
+                        .orElseThrow();
+
+        Delivery delivery = Delivery.createDelivery(order, deliveryStatus);
+
+        return deliveryRepository.save(delivery);
+    }
+
+    public Payment createPayment(Order order) {
+
+        CommonCodeDetail paymentStatus =
+                commonCodeDetailRepository
+                        .findByGroupGroupCodeAndCodeValue(
+                                "PAYMENT_STATUS",
+                                "PAID"
+                        )
+                        .orElseThrow();
+
+        CommonCodeDetail paymentMethod =
+                commonCodeDetailRepository
+                        .findByGroupGroupCodeAndCodeValue(
+                                "PAYMENT_METHOD",
+                                "CARD"
+                        )
+                        .orElseThrow();
+
+        Payment payment = Payment.createPayment(
+                order,
+                paymentStatus,
+                paymentMethod,
+                order.getFinalPrice(),
+                "test-payment-key",
+                LocalDateTime.now()
+        );
+
+        return paymentRepository.save(payment);
     }
 
     public Cart createCart(Member member) {

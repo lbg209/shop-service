@@ -5,12 +5,15 @@ import com.lbg0146.shop_service.common.entity.BaseEntity;
 import com.lbg0146.shop_service.coupon.entity.MemberCoupon;
 import com.lbg0146.shop_service.delivery.entity.Delivery;
 import com.lbg0146.shop_service.member.entity.Member;
+import com.lbg0146.shop_service.payment.entity.Payment;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Getter
@@ -34,6 +37,9 @@ public class Order extends BaseEntity {
     @JoinColumn(name = "order_status_code_id", nullable = false)
     private CommonCodeDetail orderStatus;
 
+    @OneToMany(mappedBy = "order", fetch = FetchType.LAZY)
+    private List<OrderItem> orderItems = new ArrayList<>();
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "member_coupon_id")
     private MemberCoupon memberCoupon;
@@ -55,6 +61,9 @@ public class Order extends BaseEntity {
 
     @OneToOne(mappedBy = "order", fetch = FetchType.LAZY)
     private Delivery delivery;
+
+    @OneToOne(mappedBy = "order", fetch = FetchType.LAZY)
+    private Payment payment;
 
     @Column(nullable = false)
     private Long totalPrice;       // 상품 금액 합계

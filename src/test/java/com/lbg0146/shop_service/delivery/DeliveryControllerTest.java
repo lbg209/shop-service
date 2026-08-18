@@ -1,6 +1,7 @@
 package com.lbg0146.shop_service.delivery;
 
 import com.lbg0146.shop_service.delivery.service.DeliveryService;
+import com.lbg0146.shop_service.member.entity.Member;
 import com.lbg0146.shop_service.order.entity.Order;
 import com.lbg0146.shop_service.support.TestDataFactory;
 import org.junit.jupiter.api.Test;
@@ -33,7 +34,8 @@ public class DeliveryControllerTest {
     @Test
     void 배송을_생성하면_성공() throws Exception {
 
-        Order order = testDataFactory.createPaidOrder();
+        Member member = testDataFactory.createMember();
+        Order order = testDataFactory.createPaidOrder(member);
 
         mockMvc.perform(
                         post("/api/deliveries/{orderId}", order.getId())
@@ -44,7 +46,8 @@ public class DeliveryControllerTest {
     @Test
     void 배송상태를_SHIPPING으로_변경하면_성공() throws Exception {
 
-        Order order = testDataFactory.createPaidOrder();
+        Member member = testDataFactory.createMember();
+        Order order = testDataFactory.createPaidOrder(member);
 
         Long deliveryId = deliveryService.createDelivery(order.getId());
 

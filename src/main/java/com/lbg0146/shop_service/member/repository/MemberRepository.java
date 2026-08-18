@@ -2,6 +2,7 @@ package com.lbg0146.shop_service.member.repository;
 
 import com.lbg0146.shop_service.member.entity.Member;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -21,4 +22,12 @@ public interface MemberRepository extends JpaRepository<Member, Long> {
     boolean existsByEmail(String email);
 
     boolean existsByPhone(String phone);
+
+    @Query("""
+    SELECT m
+    FROM Member m
+    JOIN FETCH m.grade
+    WHERE m.deletedAt IS NULL
+    """)
+    List<Member> findAllByDeletedAtIsNullWithGrade();
 }

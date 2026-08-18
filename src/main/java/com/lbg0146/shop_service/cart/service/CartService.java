@@ -38,8 +38,13 @@ public class CartService {
         Cart cart = cartRepository.findByMemberId(member.getId()).orElseThrow(() ->
                 new BusinessException(ErrorCode.CART_NOT_FOUND));
 
-        List<CartItemResponse> items = cartItemRepository.findAllByCartId(cart.getId())
-                        .stream()
+        // ✅ 변경 전: N+1 문제 발생
+        //List<CartItem> cartItems = cartItemRepository.findAllByCartId(cart.getId());
+
+        // ✅ 변경 후: Fetch Join을 사용하여 쿼리 1번으로 최적화
+        List<CartItem> cartItems = cartItemRepository.findAllByCartIdWithProduct(cart.getId());
+
+        List<CartItemResponse> items = cartItems.stream()
                         .map(item -> new CartItemResponse(
                                 item.getId(),
                                 item.getProduct().getId(),
@@ -66,11 +71,15 @@ public class CartService {
         Product product = productRepository.findByIdAndDeletedAtIsNull(request.productId()).orElseThrow(() ->
                         new BusinessException(ErrorCode.PRODUCT_NOT_FOUND));
 
-        Optional<CartItem> existingItem =
-                cartItemRepository.findByCartIdAndProductId(
+        // 변경 전: 동시성 문제 발생
+        /*Optional<CartItem> existingItem = cartItemRepository.findByCartIdAndProductId(
                         cart.getId(),
                         product.getId()
-                );
+        );*/
+
+
+        // 변경 후: 비관적 락을 걸고 조회
+        Optional<CartItem> existingItem = cartItemRepository.findByCartIdAndProductIdWithLock(cart.getId(), product.getId());
 
         if (existingItem.isPresent()) {
 
@@ -78,6 +87,8 @@ public class CartService {
 
             // 동시성 문제 발생 !!!!!!!!!!!!!
             cartItem.changeQuantity(cartItem.getQuantity() + request.quantity());
+
+
 
         } else {
 

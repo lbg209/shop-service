@@ -5,6 +5,7 @@ import com.lbg0146.shop_service.delivery.repository.DeliveryRepository;
 import com.lbg0146.shop_service.delivery.service.DeliveryService;
 import com.lbg0146.shop_service.exception.BusinessException;
 import com.lbg0146.shop_service.exception.ErrorCode;
+import com.lbg0146.shop_service.member.entity.Member;
 import com.lbg0146.shop_service.order.entity.Order;
 import com.lbg0146.shop_service.order.entity.OrderStatusHistory;
 import com.lbg0146.shop_service.order.repository.OrderStatusHistoryRepository;
@@ -40,7 +41,8 @@ public class DeliveryServiceTest {
     @Test
     void 배송을_생성하면_READY_상태() {
 
-        Order order = testDataFactory.createPaidOrder();
+        Member member = testDataFactory.createMember();
+        Order order = testDataFactory.createPaidOrder(member);
 
         Long deliveryId = deliveryService.createDelivery(order.getId());
 
@@ -54,7 +56,8 @@ public class DeliveryServiceTest {
     @Test
     void 배송을_SHIPPING으로_변경하면_주문도_SHIPPING으로_변경() {
 
-        Order order = testDataFactory.createPaidOrder();
+        Member member = testDataFactory.createMember();
+        Order order = testDataFactory.createPaidOrder(member);
 
         Long deliveryId = deliveryService.createDelivery(order.getId());
 
@@ -72,7 +75,8 @@ public class DeliveryServiceTest {
     @Test
     void 이미_배송이_생성된_주문은_배송을_생성_불가능() {
 
-        Order order = testDataFactory.createPaidOrder();
+        Member member = testDataFactory.createMember();
+        Order order = testDataFactory.createPaidOrder(member);
 
         // 첫 번째 배송 생성
         deliveryService.createDelivery(order.getId());
@@ -89,7 +93,8 @@ public class DeliveryServiceTest {
     void 배송을_SHIPPING으로_변경하면_주문상태와_이력이_함께_변경() {
 
         // given
-        Order order = testDataFactory.createPaidOrder();
+        Member member = testDataFactory.createMember();
+        Order order = testDataFactory.createPaidOrder(member);
 
         Long deliveryId = deliveryService.createDelivery(order.getId());
 
@@ -121,7 +126,8 @@ public class DeliveryServiceTest {
     @Test
     void 배송을_DELIVERED로_변경하면_주문상태와_이력이_함께_변경() {
 
-        Order order = testDataFactory.createPaidOrder();
+        Member member = testDataFactory.createMember();
+        Order order = testDataFactory.createPaidOrder(member);
 
         Long deliveryId = deliveryService.createDelivery(order.getId());
 

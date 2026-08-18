@@ -40,7 +40,8 @@ public class OrderStatusHistoryServiceTest {
     @Test
     void 주문_생성시_CREATE_이력이_저장() {
 
-        Order order = testDataFactory.createOrder();
+        Member member = testDataFactory.createMember();
+        Order order = testDataFactory.createOrder(member);
 
         List<OrderStatusHistory> histories = orderStatusHistoryRepository.findAllByOrderId(order.getId());
 
@@ -56,7 +57,8 @@ public class OrderStatusHistoryServiceTest {
     @Test
     void 주문_상태를_변경하면_UPDATE_이력이_저장() {
 
-        Order order = testDataFactory.createOrder();
+        Member member = testDataFactory.createMember();
+        Order order = testDataFactory.createOrder(member);
 
         CommonCodeDetail paidStatus = commonCodeDetailRepository.findByGroupGroupCodeAndCodeValue(
                 "ORDER_STATUS",
