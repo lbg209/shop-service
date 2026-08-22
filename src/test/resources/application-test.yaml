@@ -8,6 +8,12 @@ spring:
     init:
       mode: always
 
+  batch:
+    jdbc:
+      initialize-schema: always
+    job:
+      enabled: false
+
   jpa:
     defer-datasource-initialization: true
     hibernate:

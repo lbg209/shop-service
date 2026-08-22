@@ -117,7 +117,6 @@ public class NPlusOneTest {
     // 여기서는 영속성 컨텍스트를 위해 Transactional을 붙입니다.
     @Transactional
     void cartNPlusOneIssue() {
-        // given
         Member member = testDataFactory.createMember();
         Cart cart = testDataFactory.createCart(member);
         Category category = Category.createCategory("테스트카테고리", null);
@@ -130,25 +129,21 @@ public class NPlusOneTest {
             testDataFactory.createCartItem(cart, product, 1);
         }
 
-        // 💡 핵심 포인트: 실제 서비스 환경과 동일하게 만들기 위해
-        // 1차 캐시(메모리)에 쌓인 것들을 DB에 강제로 밀어넣고(flush) 메모리를 비웁니다(clear).
+        // 1차 캐시에 쌓인 것들을 DB에 강제로 밀어넣고 메모리를 비웁니다.
         em.flush();
         em.clear();
 
         log.info("================= [장바구니 조회 시작] =================");
 
-        // when: 장바구니 조회 메서드 호출
         cartService.getCart(member.getId()); //[cite: 2]
 
         log.info("================= [장바구니 조회 종료] =================");
 
-        // then: 콘솔 로그에서 "장바구니 조회 시작"과 "종료" 사이에
-        // select product ... 쿼리가 5번 찍히는지 눈으로 확인합니다!
+        // select product 쿼리가 5번 찍히는지 확인합니다
     }
 
     @Test
     @DisplayName("N+1 문제 확인: members를 조회할때 grade 조회 쿼리가 추가로 나간다")
-    // 여기서는 영속성 컨텍스트를 위해 Transactional을 붙입니다.
     @Transactional
     void memberNPlusOneIssue() {
         Grade basicGrade = gradeRepository.findByGradeCode("BASIC")
@@ -161,20 +156,16 @@ public class NPlusOneTest {
 
         }
 
-        // 💡 핵심 포인트: 실제 서비스 환경과 동일하게 만들기 위해
-        // 1차 캐시(메모리)에 쌓인 것들을 DB에 강제로 밀어넣고(flush) 메모리를 비웁니다(clear).
         em.flush();
         em.clear();
 
         System.out.println("================= [member 조회 시작] =================");
 
-        // when: 장바구니 조회 메서드 호출
         List<MemberResponse> members = memberService.findMembers();
 
         System.out.println("================= [member 조회 종료] =================");
 
-        // then: 콘솔 로그에서 "장바구니 조회 시작"과 "종료" 사이에
-        // select product ... 쿼리가 5번 찍히는지 눈으로 확인합니다!
+        // select product 쿼리가 5번 찍히는 지 확인합니다
     }
 
     @Test

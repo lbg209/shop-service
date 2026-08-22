@@ -1,6 +1,9 @@
 package com.lbg0146.shop_service.member;
 
+import com.lbg0146.shop_service.common.code.entity.CommonCodeDetail;
 import com.lbg0146.shop_service.common.code.repository.CommonCodeDetailRepository;
+import com.lbg0146.shop_service.exception.BusinessException;
+import com.lbg0146.shop_service.exception.ErrorCode;
 import com.lbg0146.shop_service.member.entity.Member;
 import com.lbg0146.shop_service.member.entity.MemberHistory;
 import com.lbg0146.shop_service.member.repository.MemberHistoryRepository;
@@ -42,9 +45,12 @@ public class MemberHistoryServiceTest {
 
         Member member = testDataFactory.createMember();
 
+        CommonCodeDetail createCode = commonCodeDetailRepository.findByGroupGroupCodeAndCodeValue("HISTORY_CHANGE_TYPE", "CREATE")
+                .orElseThrow(() -> new BusinessException(ErrorCode.HISTORY_CHANGE_TYPE_NOT_FOUND));
+
         memberHistoryService.saveHistory(
                 member,
-                "CREATE",
+                createCode,
                 null
         );
 
@@ -76,9 +82,12 @@ public class MemberHistoryServiceTest {
 
         Member member = testDataFactory.createMember();
 
+        CommonCodeDetail createCode = commonCodeDetailRepository.findByGroupGroupCodeAndCodeValue("HISTORY_CHANGE_TYPE", "CREATE")
+                .orElseThrow(() -> new BusinessException(ErrorCode.HISTORY_CHANGE_TYPE_NOT_FOUND));
+
         memberHistoryService.saveHistory(
                 member,
-                "CREATE",
+                createCode,
                 null
         );
 

@@ -60,7 +60,7 @@ public class AddressConcurrencyTest {
         // given: 테스트용 회원 생성
         Member member = testDataFactory.createMember();
 
-        // 주소 2개 직접 생성 및 저장 (둘 다 기본 배송지가 아닌 상태로 시작)
+        // 주소 2개 직접 생성 및 저장
         Address address1 = Address.createAddress(
                 member, "집", "홍길동", "010-1111-2222", "12345", "서울시 강남구", "101호", false
         );
@@ -73,7 +73,7 @@ public class AddressConcurrencyTest {
         ExecutorService executorService = Executors.newFixedThreadPool(2);
         CountDownLatch latch = new CountDownLatch(threadCount);
 
-        // when: 서로 다른 주소를 "동시에" 기본 배송지로 변경 요청
+        // when: 서로 다른 주소를 동시에 기본 배송지로 변경 요청
         executorService.submit(() -> {
             try {
                 addressService.changeDefaultAddress(member.getId(), address1.getId()); //
@@ -96,20 +96,21 @@ public class AddressConcurrencyTest {
 
         latch.await();
 
-        // then: 해당 회원의 전체 배송지를 불러와서 기본 배송지(isDefault = true)인 것만 필터링
+        // then: 해당 회원의 전체 배송지를 불러와서 기본 배송지인 것만 필터링
         List<Address> defaultAddresses = addressRepository.findAllByMemberId(member.getId())
                 .stream()
                 .filter(Address::isDefault) // isDefault가 true인 것만 남김
                 .toList();
 
         if (defaultAddresses.size() > 1) {
-            log.error("🚨 [동시성 테스트 결과] 기본 배송지가 유일해야 하지만 현재 [{}]개의 기본 배송지가 존재합니다!", defaultAddresses.size());
+            log.error("[동시성 테스트 결과] 기본 배송지가 유일해야 하지만 현재 [{}]개의 기본 배송지가 존재합니다", defaultAddresses.size());
         } else {
-            log.info("✅ [동시성 테스트 결과] 1개의 기본 배송지만 존재합니다.");
+            log.info("[동시성 테스트 결과] 1개의 기본 배송지만 존재합니다");
         }
 
-        // 기본 배송지가 1개여야 하지만 동시성 문제로 2개가 되어 테스트 실패 재현 (초록불이 들어오면 문제 재현 성공!)
+        // 기본 배송지가 1개여야 하지만 동시성 문제로 2개가 되어 테스트 실패 재현
         //assertThat(defaultAddresses).hasSizeGreaterThan(1);
         assertThat(defaultAddresses).hasSize(1);
+        executorService.shutdown();
     }
 }

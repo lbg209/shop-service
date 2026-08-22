@@ -1,5 +1,6 @@
 package com.lbg0146.shop_service.batch.job;
 
+import com.lbg0146.shop_service.batch.support.BatchExecutionTimeListener;
 import com.lbg0146.shop_service.coupon.entity.Coupon;
 import com.lbg0146.shop_service.coupon.entity.MemberCoupon;
 import com.lbg0146.shop_service.coupon.repository.CouponRepository;
@@ -27,6 +28,7 @@ import org.springframework.transaction.PlatformTransactionManager;
 
 import java.time.LocalDateTime;
 import java.util.Map;
+import java.util.Set;
 
 @Slf4j
 @Configuration
@@ -38,12 +40,14 @@ public class DormantMemberCouponBatchConfig {
     private final EntityManagerFactory entityManagerFactory;
     private final MemberCouponRepository memberCouponRepository;
     private final CouponRepository couponRepository;
+    private final BatchExecutionTimeListener batchExecutionTimeListener;
 
     private static final int CHUNK_SIZE = 1000;
 
     @Bean
     public Job dormantMemberCouponJob() {
         return new JobBuilder("dormantMemberCouponJob", jobRepository)
+                .listener(batchExecutionTimeListener)
                 .start(dormantMemberCouponStep())
                 .build();
     }
@@ -65,7 +69,7 @@ public class DormantMemberCouponBatchConfig {
     public JpaPagingItemReader<Member> dormantMemberReader() {
         LocalDateTime threeMonthsAgo = LocalDateTime.now().minusMonths(3);
 
-        log.info("📅 미주문 고객 조회 기준일: {}", threeMonthsAgo);
+        log.info("미주문 고객 조회 기준일: {}", threeMonthsAgo);
 
         return new JpaPagingItemReaderBuilder<Member>()
                 .name("dormantMemberReader")
@@ -90,36 +94,47 @@ public class DormantMemberCouponBatchConfig {
     @StepScope
     public ItemProcessor<Member, MemberCoupon> dormantMemberProcessor(@Value("${app.batch.dormant-coupon-id}") Long targetCouponId) {
 
-        // 1. 배치가 시작될 때 쿠폰을 딱 한 번만 조회해 둡니다.
-        // 기존 IllegalArgumentException 대신 만들어두신 BusinessException 사용!
+        // 배치가 시작될 때 쿠폰을 한 번만 조회해 둡니다.
         Coupon targetCoupon = couponRepository.findByIdAndDeletedAtIsNull(targetCouponId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.COUPON_NOT_FOUND));
 
-        log.info("🎯 휴면 고객용 쿠폰 로드 완료: {}", targetCoupon.getCouponName());
+        long start = System.currentTimeMillis();
+        // 이미 해당 쿠폰을 받은 회원 ID를 한 번에 조회
+        Set<Long> alreadyIssuedMemberIds =
+                memberCouponRepository.findMemberIdsByCouponId(targetCouponId);
+
+        long end = System.currentTimeMillis();
+
+        log.info("기존 쿠폰 발급 회원 조회 시간: {} ms", end - start);
+
+        log.info("이미 쿠폰을 발급받은 회원 수: {}", alreadyIssuedMemberIds.size());
+        log.info("쿠폰 로드 완료: {}", targetCoupon.getCouponName());
 
         return member -> {
-
-            // 2. 이미 받았는지 중복 검사
+/*
+            // 이미 받았는지 중복 검사
             boolean alreadyIssued = memberCouponRepository.existsByMemberIdAndCouponId(member.getId(), targetCouponId);
 
             if (alreadyIssued) {
                 return null; // 스킵
             }
+*/
+            if (alreadyIssuedMemberIds.contains(member.getId())) {
+                return null;
+            }
 
-            log.info("🎁 쿠폰 지급 대상자 발견! 회원 ID: {}", member.getId());
-
-            // 3. 미리 찾아둔 targetCoupon을 재사용하여 쿠폰 발급!
+            // targetCoupon을 재사용하여 쿠폰 발급
             return MemberCoupon.createMemberCoupon(member, targetCoupon);
         };
     }
 
-    // 3. Writer: 생성된 MemberCoupon 정보 DB 저장
+    // Writer: 생성된 MemberCoupon 정보 DB 저장
     @Bean
     public ItemWriter<MemberCoupon> dormantMemberWriter() {
         return chunk -> {
-            log.info("💾 컴백 쿠폰 DB 저장 시작... (총 {}명)", chunk.size());
+            log.info(" 컴백 쿠폰 DB 저장 시작 (총 {}명)", chunk.size());
             memberCouponRepository.saveAll(chunk.getItems());
-            log.info("✅ 청크 단위 쿠폰 지급 완료!");
+            log.info(" 청크 단위 쿠폰 지급 완료");
         };
     }
 }

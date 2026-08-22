@@ -1,5 +1,7 @@
 package com.lbg0146.shop_service.member.service;
 
+import com.lbg0146.shop_service.common.code.entity.CommonCodeDetail;
+import com.lbg0146.shop_service.common.code.repository.CommonCodeDetailRepository;
 import com.lbg0146.shop_service.common.enums.Role;
 import com.lbg0146.shop_service.exception.BusinessException;
 import com.lbg0146.shop_service.exception.ErrorCode;
@@ -25,6 +27,7 @@ public class MemberService {
     private final MemberRepository memberRepository;
     private final GradeRepository gradeRepository;
     private final MemberHistoryService memberHistoryService;
+    private final CommonCodeDetailRepository commonCodeDetailRepository;
 
     @Transactional
     public Long join(MemberCreateRequest request) {
@@ -45,11 +48,14 @@ public class MemberService {
                 Role.USER
         );
 
+        CommonCodeDetail createCode = commonCodeDetailRepository.findByGroupGroupCodeAndCodeValue("HISTORY_CHANGE_TYPE", "CREATE")
+                .orElseThrow(() -> new BusinessException(ErrorCode.HISTORY_CHANGE_TYPE_NOT_FOUND));
+
         Member saveMember = memberRepository.save(member);
 
         memberHistoryService.saveHistory(
                 saveMember,
-                "CREATE",
+                createCode,
                 null
         );
 
@@ -91,9 +97,12 @@ public class MemberService {
 
         member.update(request.nickname(), request.phone());
 
+        CommonCodeDetail updateCode = commonCodeDetailRepository.findByGroupGroupCodeAndCodeValue("HISTORY_CHANGE_TYPE", "UPDATE")
+                .orElseThrow(() -> new BusinessException(ErrorCode.HISTORY_CHANGE_TYPE_NOT_FOUND));
+
         memberHistoryService.saveHistory(
                 member,
-                "UPDATE",
+                updateCode,
                 null
         );
     }
@@ -110,9 +119,12 @@ public class MemberService {
 
         member.delete();
 
+        CommonCodeDetail deleteCode = commonCodeDetailRepository.findByGroupGroupCodeAndCodeValue("HISTORY_CHANGE_TYPE", "DELETE")
+                .orElseThrow(() -> new BusinessException(ErrorCode.HISTORY_CHANGE_TYPE_NOT_FOUND));
+
         memberHistoryService.saveHistory(
                 member,
-                "DELETE",
+                deleteCode,
                 null
         );
     }

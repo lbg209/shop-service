@@ -75,7 +75,7 @@ public class OrderConcurrencyTest {
         ExecutorService executorService = Executors.newFixedThreadPool(32);
         CountDownLatch latch = new CountDownLatch(threadCount);
 
-        // 10번 동시에 주문 요청!
+        // 10번 동시에 주문 요청
         for (int i = 0; i < threadCount; i++) {
             executorService.submit(() -> {
                 try {
@@ -94,13 +94,15 @@ public class OrderConcurrencyTest {
         Product finalProduct = productRepository.findById(product.getId()).orElseThrow();
 
         if (finalProduct.getStockQuantity() != 0) {
-            log.error("🚨 [동시성 테스트 결과] 동시에 10번 주문을 요청했지만 초과 판매(Lost Update)가 발생하여 남은 재고가 [{}]개 입니다!", finalProduct.getStockQuantity());
+            log.error("[동시성 테스트 결과] 동시에 10번 주문을 요청했지만 초과 판매(Lost Update)가 발생하여 남은 재고가 [{}]개 입니다!", finalProduct.getStockQuantity());
         } else {
-            log.info("✅ [동시성 테스트 결과] 10번의 주문 요청이 정상적으로 처리되어 최종 재고가 [{}]개입니다.", finalProduct.getStockQuantity());
+            log.info("[동시성 테스트 결과] 10번의 주문 요청이 정상적으로 처리되어 최종 재고가 [{}]개입니다.", finalProduct.getStockQuantity());
         }
 
         // 10개 중 10개를 주문했으므로 0이어야 하지만 동시성 문제로 인해 0이 아님
         //assertThat(finalProduct.getStockQuantity()).isNotEqualTo(0);
         assertThat(finalProduct.getStockQuantity()).isEqualTo(0);
+
+        executorService.shutdown();
     }
 }
